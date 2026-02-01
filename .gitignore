@@ -1,0 +1,29 @@
+# Bundler
+/.bundle/
+/vendor/bundle
+
+# Gem build
+*.gem
+/pkg/
+
+# RSpec
+/coverage/
+/spec/reports/
+
+# Documentation
+/doc/
+/.yardoc/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
