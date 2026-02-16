@@ -429,6 +429,78 @@ module Tedo
         PortalLink.new(data, client: @client)
       end
 
+      # ============================================================
+      # PAYMENT CONFIGS
+      # ============================================================
+
+      # Create a payment configuration.
+      #
+      # @param provider [String] Payment provider (e.g., "mollie", "stripe")
+      # @param connection_id [String] Provider connection/account ID
+      # @param is_default [Boolean] Whether this is the default config
+      # @param settings [Hash, nil] Provider-specific settings
+      # @return [PaymentConfig] The created config
+      #
+      # @example
+      #   config = client.billing.create_payment_config(
+      #     provider: "mollie",
+      #     connection_id: "org_xxx",
+      #     settings: { "payment_mode" => "request" }
+      #   )
+      #
+      def create_payment_config(provider:, connection_id:, is_default: false, settings: nil)
+        body = { provider: provider, connection_id: connection_id, is_default: is_default }
+        body[:settings] = settings if settings
+
+        data = @client.post("/billing/payment-configs", body)
+        PaymentConfig.new(data, client: @client)
+      end
+
+      # List all payment configurations.
+      #
+      # @return [Array<PaymentConfig>] List of payment configs
+      def list_payment_configs
+        data = @client.get("/billing/payment-configs")
+        (data["payment_configs"] || []).map { |c| PaymentConfig.new(c, client: @client) }
+      end
+
+      # Get a payment config by ID.
+      #
+      # @param id [String] Payment config ID
+      # @return [PaymentConfig] The payment config
+      def get_payment_config(id)
+        data = @client.get("/billing/payment-configs/#{id}")
+        PaymentConfig.new(data, client: @client)
+      end
+
+      # Update a payment config.
+      #
+      # @param id [String] Payment config ID
+      # @param provider [String, nil] New provider
+      # @param connection_id [String, nil] New connection ID
+      # @param is_default [Boolean, nil] Set as default
+      # @param settings [Hash, nil] New settings
+      # @return [PaymentConfig] The updated config
+      def update_payment_config(id, provider: nil, connection_id: nil, is_default: nil, settings: nil)
+        body = {}
+        body[:provider] = provider if provider
+        body[:connection_id] = connection_id if connection_id
+        body[:is_default] = is_default unless is_default.nil?
+        body[:settings] = settings if settings
+
+        data = @client.patch("/billing/payment-configs/#{id}", body)
+        PaymentConfig.new(data, client: @client)
+      end
+
+      # Delete a payment config.
+      #
+      # @param id [String] Payment config ID
+      # @return [void]
+      def delete_payment_config(id)
+        @client.delete("/billing/payment-configs/#{id}")
+        nil
+      end
+
       private
 
       def fetch_customers_page(limit:, cursor:)

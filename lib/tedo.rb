@@ -17,6 +17,7 @@ require_relative "tedo/resources/subscription"
 require_relative "tedo/resources/entitlement_check"
 require_relative "tedo/resources/usage"
 require_relative "tedo/resources/portal_link"
+require_relative "tedo/resources/payment_config"
 
 # API resources
 require_relative "tedo/resources/billing"
