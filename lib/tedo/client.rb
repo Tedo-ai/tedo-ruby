@@ -15,6 +15,10 @@ module Tedo
       @billing ||= Resources::Billing.new(self)
     end
 
+    def sales
+      @sales ||= Resources::Sales.new(self)
+    end
+
     # HTTP methods
     def get(path, params = {})
       request(:get, path, params)
