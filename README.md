@@ -23,23 +23,22 @@ require "tedo"
 
 client = Tedo::Client.new("tedo_live_xxx")
 
-# Create a customer
+# Billing: create a customer and subscribe
 customer = client.billing.create_customer(
   email: "user@example.com",
   name: "Acme Corp"
 )
-puts "Created: #{customer.id}"
-puts "Email: #{customer.email}"
-
-# Create a subscription
 subscription = customer.subscribe(price_id: "price_xxx")
-puts "Status: #{subscription.status}"
 puts "Active? #{subscription.active?}"
 
-# Check entitlement
-if customer.entitled?("api_access")
-  puts "Customer has API access"
-end
+# Sales: set up a pipeline and capture a lead
+pipeline = client.sales.create_pipeline(name: "B2B Sales", resource_type: Tedo::ResourceType::LEAD)
+stage    = client.sales.create_stage(pipeline.id, name: "New",   position: 1)
+won      = client.sales.create_stage(pipeline.id, name: "Won",   position: 2,
+                                     is_terminal: true, outcome: Tedo::StageOutcome::POSITIVE)
+
+lead = client.sales.create_lead(label: "Acme Inquiry", pipeline_id: pipeline.id, source: "website")
+lead.move_stage(stage_id: won.id)
 ```
 
 ## Typed Resources
@@ -87,6 +86,7 @@ end
 
 # Then use the global client
 customer = Tedo.billing.create_customer(email: "user@example.com")
+pipeline = Tedo.sales.create_pipeline(name: "Enterprise", resource_type: "lead")
 ```
 
 ### Per-Client Configuration
@@ -166,7 +166,7 @@ rescue Tedo::Error => e
 end
 ```
 
-## Available Methods
+## Services
 
 ### Billing
 
@@ -185,9 +185,7 @@ end
 | `get_usage_summary(subscription_id:)` | `UsageSummary` | Get usage summary |
 | `create_portal_link(customer_id:, expires_in_hours:)` | `PortalLink` | Create self-service portal link |
 
-### Resource Methods
-
-Resources have methods for common operations:
+**Resource methods:**
 
 ```ruby
 # Customer methods
@@ -203,6 +201,247 @@ subscription.cancel
 subscription.record_usage(quantity: 100)
 subscription.usage_summary
 ```
+
+### Sales
+
+The Sales service covers the full CRM lifecycle: pipelines, stages, leads, deals, activities, notes, and contacts (persons and organizations).
+
+#### Pipelines and Stages
+
+```ruby
+# Create a pipeline for leads
+pipeline = client.sales.create_pipeline(
+  name: "Inbound",
+  resource_type: Tedo::ResourceType::LEAD  # "lead" or "deal"
+)
+
+# Add stages
+client.sales.create_stage(pipeline.id, name: "New",       position: 1)
+client.sales.create_stage(pipeline.id, name: "Qualified", position: 2)
+client.sales.create_stage(pipeline.id, name: "Won",       position: 3,
+                          is_terminal: true,
+                          outcome: Tedo::StageOutcome::POSITIVE)
+client.sales.create_stage(pipeline.id, name: "Lost",      position: 4,
+                          is_terminal: true,
+                          outcome: Tedo::StageOutcome::NEGATIVE)
+```
+
+#### Leads
+
+```ruby
+# Create a lead
+lead = client.sales.create_lead(
+  label:       "Acme Corp Inquiry",
+  pipeline_id: pipeline.id,
+  source:      "website"
+)
+
+# Move through stages
+client.sales.move_lead_stage(lead.id, stage_id: qualified_stage.id)
+
+# Convert to a deal
+deal = client.sales.convert_lead_to_deal(
+  lead.id,
+  deal_pipeline_id: deal_pipeline.id,
+  deal_stage_id:    deal_stage.id,
+  value:            50_000,
+  currency:         "EUR"
+)
+
+# List leads filtered by pipeline
+leads = client.sales.list_leads(pipeline_id: pipeline.id)
+```
+
+#### Deals
+
+```ruby
+deal = client.sales.create_deal(
+  label:               "Enterprise License",
+  pipeline_id:         deal_pipeline.id,
+  value:               120_000,
+  currency:            "USD",
+  expected_close_date: Date.new(2026, 6, 30)  # accepts Date objects
+)
+
+client.sales.move_deal_stage(deal.id, stage_id: next_stage.id)
+client.sales.update_deal(deal.id, value: 135_000)
+```
+
+Date fields (`expected_close_date`, `due_date`) accept ISO 8601 strings or Ruby `Date`/`Time` objects.
+
+#### Activities
+
+Activities are tracked tasks, calls, emails, meetings, and deadlines. Use `Tedo::ActivityType` constants and `Tedo::Link` helpers to attach them to leads, deals, persons, or organizations.
+
+```ruby
+activity = client.sales.create_activity(
+  type:             Tedo::ActivityType::CALL,
+  subject:          "Discovery call with Acme",
+  due_date:         Date.today + 3,
+  due_time:         "14:00",
+  duration_minutes: 30,
+  links: [
+    Tedo::Link.deal(deal.id),
+    Tedo::Link.person(person.id, primary: false)
+  ]
+)
+
+# Mark complete (or undo with completed: false)
+client.sales.complete_activity(activity.id)
+```
+
+**`Tedo::ActivityType` constants:**
+
+| Constant | Value |
+|----------|-------|
+| `Tedo::ActivityType::TASK` | `"task"` |
+| `Tedo::ActivityType::CALL` | `"call"` |
+| `Tedo::ActivityType::EMAIL` | `"email"` |
+| `Tedo::ActivityType::MEETING` | `"meeting"` |
+| `Tedo::ActivityType::DEADLINE` | `"deadline"` |
+
+**`Tedo::Link` helpers:**
+
+| Helper | Default `is_primary` | Description |
+|--------|---------------------|-------------|
+| `Tedo::Link.lead(id)` | `true` | Link to a lead |
+| `Tedo::Link.deal(id)` | `true` | Link to a deal |
+| `Tedo::Link.person(id)` | `false` | Link to a person |
+| `Tedo::Link.organization(id)` | `false` | Link to an organization |
+
+Pass `primary: true/false` to override the default.
+
+#### Notes
+
+```ruby
+note = client.sales.create_note(
+  content: "Discussed pricing. Follow up next week.",
+  links:   [Tedo::Link.deal(deal.id)]
+)
+
+client.sales.update_note(note.id, content: "Updated summary.")
+client.sales.list_notes(deal_id: deal.id)
+```
+
+#### Persons and Organizations
+
+Persons and organizations live inside a **contact base** — a named collection of contacts.
+
+```ruby
+base = client.sales.create_contact_base(name: "Prospects")
+
+person = client.sales.create_person(
+  base.id,
+  first_name:   "Jane",
+  last_name:    "Doe",
+  email:        "jane@acme.com",
+  phone:        "+1-555-0100",
+  linkedin_url: "https://linkedin.com/in/janedoe"
+)
+
+org = client.sales.create_organization(
+  base.id,
+  name:    "Acme Corp",
+  website: "https://acme.com"
+)
+
+# Attach to a lead
+client.sales.update_lead(lead.id, person_id: person.id, organization_id: org.id)
+```
+
+#### Full Sales Method Reference
+
+**Pipelines**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `create_pipeline(name:, resource_type:)` | `Pipeline` | Create a pipeline |
+| `list_pipelines` | `Array<Pipeline>` | List all pipelines |
+| `get_pipeline(id)` | `Pipeline` | Get a pipeline by ID |
+| `update_pipeline(id, name:)` | `Pipeline` | Rename a pipeline |
+| `delete_pipeline(id)` | `nil` | Delete a pipeline |
+
+**Stages**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `create_stage(pipeline_id, name:, position:, is_terminal:, outcome:)` | `PipelineStage` | Add a stage to a pipeline |
+| `list_stages(pipeline_id)` | `Array<PipelineStage>` | List stages for a pipeline |
+| `get_stage(id)` | `PipelineStage` | Get a stage by ID |
+| `update_stage(id, name:, position:, is_terminal:, outcome:)` | `PipelineStage` | Update a stage |
+| `delete_stage(id)` | `nil` | Delete a stage |
+
+**Leads**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `create_lead(label:, pipeline_id:, person_id:, organization_id:, source:)` | `Lead` | Create a lead |
+| `list_leads(pipeline_id:)` | `Array<Lead>` | List leads, optionally filtered |
+| `get_lead(id)` | `Lead` | Get a lead by ID |
+| `update_lead(id, label:, person_id:, organization_id:, source:)` | `Lead` | Update a lead |
+| `delete_lead(id)` | `nil` | Delete a lead |
+| `move_lead_stage(id, stage_id:)` | `Lead` | Move lead to a stage |
+| `convert_lead_to_deal(id, deal_pipeline_id:, deal_stage_id:, deal_label:, value:, currency:)` | `Deal` | Convert lead to deal |
+
+**Deals**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `create_deal(label:, pipeline_id:, person_id:, organization_id:, value:, currency:, expected_close_date:)` | `Deal` | Create a deal |
+| `list_deals(pipeline_id:)` | `Array<Deal>` | List deals, optionally filtered |
+| `get_deal(id)` | `Deal` | Get a deal by ID |
+| `update_deal(id, label:, person_id:, organization_id:, value:, currency:, expected_close_date:)` | `Deal` | Update a deal |
+| `delete_deal(id)` | `nil` | Delete a deal |
+| `move_deal_stage(id, stage_id:)` | `Deal` | Move deal to a stage |
+
+**Activities**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `create_activity(type:, subject:, description:, due_date:, due_time:, duration_minutes:, assigned_to_id:, links:)` | `Activity` | Create an activity |
+| `list_activities(lead_id:, deal_id:, type:)` | `Array<Activity>` | List activities, optionally filtered |
+| `get_activity(id)` | `Activity` | Get an activity by ID |
+| `update_activity(id, subject:, description:, due_date:, due_time:, duration_minutes:)` | `Activity` | Update an activity |
+| `delete_activity(id)` | `nil` | Delete an activity |
+| `complete_activity(id, completed:)` | `Activity` | Mark activity complete or incomplete |
+
+**Notes**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `create_note(content:, author_id:, links:)` | `Note` | Create a note |
+| `list_notes(lead_id:, deal_id:)` | `Array<Note>` | List notes, optionally filtered |
+| `get_note(id)` | `Note` | Get a note by ID |
+| `update_note(id, content:)` | `Note` | Update a note |
+| `delete_note(id)` | `nil` | Delete a note |
+
+**Contact Bases**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `create_contact_base(name:)` | `ContactBase` | Create a contact base |
+| `list_contact_bases` | `Array<ContactBase>` | List all contact bases |
+| `get_contact_base(id)` | `ContactBase` | Get a contact base by ID |
+
+**Persons**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `create_person(contact_base_id, first_name:, last_name:, email:, phone:, linkedin_url:)` | `Person` | Create a person |
+| `list_persons(contact_base_id)` | `Array<Person>` | List persons in a contact base |
+| `get_person(id)` | `Person` | Get a person by ID |
+| `update_person(id, full_name:, first_name:, last_name:, email:, phone:, linkedin_url:)` | `Person` | Update a person |
+| `delete_person(id)` | `nil` | Delete a person |
+
+**Organizations**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `create_organization(contact_base_id, name:, website:, linkedin_url:)` | `Organization` | Create an organization |
+| `list_organizations(contact_base_id)` | `Array<Organization>` | List organizations in a contact base |
+| `get_organization(id)` | `Organization` | Get an organization by ID |
+| `update_organization(id, name:, website:, linkedin_url:)` | `Organization` | Update an organization |
+| `delete_organization(id)` | `nil` | Delete an organization |
 
 ## Rails Integration
 
@@ -235,6 +474,38 @@ class BillingService
     Tedo.billing
         .get_customer(user.tedo_customer_id)
         .entitled?(feature)
+  end
+end
+```
+
+```ruby
+# app/services/sales_service.rb
+class SalesService
+  def capture_lead(name:, email:, pipeline_id:, source: "website")
+    base = Tedo.sales.list_contact_bases.first
+
+    person = Tedo.sales.create_person(
+      base.id,
+      first_name: name.split.first,
+      last_name:  name.split.last,
+      email:      email
+    )
+
+    lead = Tedo.sales.create_lead(
+      label:       name,
+      pipeline_id: pipeline_id,
+      person_id:   person.id,
+      source:      source
+    )
+
+    Tedo.sales.create_activity(
+      type:    Tedo::ActivityType::EMAIL,
+      subject: "Send welcome email",
+      due_date: Date.today,
+      links:   [Tedo::Link.lead(lead.id)]
+    )
+
+    lead
   end
 end
 ```
