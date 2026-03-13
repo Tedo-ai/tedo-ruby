@@ -579,21 +579,6 @@ module Tedo
       # CONTACT BASES
       # ============================================================
 
-      # Create a new contact base.
-      #
-      # @param name [String] Contact base name
-      # @return [ContactBase] The created contact base
-      #
-      # @example
-      #   base = client.sales.create_contact_base(name: "Customers")
-      #
-      def create_contact_base(name:)
-        body = { name: name }
-
-        data = @client.post("/sales/v1/contact-bases", body)
-        ContactBase.new(data, client: @client)
-      end
-
       # List all contact bases.
       #
       # @return [Array<ContactBase>] List of contact bases

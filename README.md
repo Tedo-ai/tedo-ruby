@@ -328,10 +328,12 @@ client.sales.list_notes(deal_id: deal.id)
 Persons and organizations live inside a **contact base** — a named collection of contacts.
 
 ```ruby
-base = client.sales.create_contact_base(name: "Prospects")
+# List contact bases (each workspace has a default one)
+bases = client.sales.list_contact_bases
+base_id = bases.first.id
 
 person = client.sales.create_person(
-  base.id,
+  base_id,
   first_name:   "Jane",
   last_name:    "Doe",
   email:        "jane@acme.com",
@@ -419,7 +421,6 @@ client.sales.update_lead(lead.id, person_id: person.id, organization_id: org.id)
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `create_contact_base(name:)` | `ContactBase` | Create a contact base |
 | `list_contact_bases` | `Array<ContactBase>` | List all contact bases |
 | `get_contact_base(id)` | `ContactBase` | Get a contact base by ID |
 
