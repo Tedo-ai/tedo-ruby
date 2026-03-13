@@ -421,6 +421,7 @@ client.sales.update_lead(lead.id, person_id: person.id, organization_id: org.id)
 
 | Method | Returns | Description |
 |--------|---------|-------------|
+| `create_contact_base(name:)` | `ContactBase` | Create a new contact base |
 | `list_contact_bases` | `Array<ContactBase>` | List all contact bases |
 | `get_contact_base(id)` | `ContactBase` | Get a contact base by ID |
 
