@@ -430,6 +430,118 @@ module Tedo
       end
 
       # ============================================================
+      # INVOICES
+      # ============================================================
+
+      # List invoices for a customer.
+      #
+      # @param customer_id [String] Customer ID (required)
+      # @param limit [Integer, nil] Maximum results per page
+      # @param offset [Integer, nil] Pagination offset
+      # @return [Array<Invoice>] List of invoices
+      def list_invoices(customer_id:, limit: nil, offset: nil)
+        params = { customer_id: customer_id }
+        params[:limit] = limit if limit
+        params[:offset] = offset if offset
+
+        data = @client.get("/billing/invoices", params)
+        (data["invoices"] || []).map { |i| Invoice.new(i, client: @client) }
+      end
+
+      # Create a standalone invoice (not tied to a subscription).
+      #
+      # @param customer_id [String] Customer ID
+      # @param lines [Array<Hash>] Line items (description, quantity, unit_amount)
+      # @param currency [String] Currency code (default: EUR)
+      # @param notes [String, nil] Invoice notes
+      # @param metadata [Hash, nil] Arbitrary metadata
+      # @return [Invoice] The created invoice
+      #
+      # @example
+      #   invoice = client.billing.create_invoice(
+      #     customer_id: "cus_xxx",
+      #     lines: [{ description: "Consulting", quantity: 2, unit_amount: 5000 }]
+      #   )
+      #
+      def create_invoice(customer_id:, lines:, currency: "EUR", notes: nil, metadata: nil)
+        body = { customer_id: customer_id, currency: currency, lines: lines }
+        body[:notes] = notes if notes
+        body[:metadata] = metadata if metadata
+
+        data = @client.post("/billing/invoices", body)
+        Invoice.new(data, client: @client)
+      end
+
+      # Retrieve an invoice by ID.
+      #
+      # @param id [String] Invoice ID
+      # @return [Invoice] The invoice
+      def get_invoice(id)
+        data = @client.get("/billing/invoices/#{id}")
+        Invoice.new(data, client: @client)
+      end
+
+      # Create a checkout session for an invoice.
+      #
+      # @param invoice_id [String] Invoice ID
+      # @param redirect_url [String, nil] URL to redirect after payment
+      # @return [InvoiceCheckoutResult] Result with checkout_url, payment_id
+      def create_invoice_checkout(invoice_id, redirect_url: nil)
+        body = {}
+        body[:redirect_url] = redirect_url if redirect_url
+
+        data = @client.post("/billing/invoices/#{invoice_id}/checkout", body)
+        InvoiceCheckoutResult.new(data, client: @client)
+      end
+
+      # ============================================================
+      # CHECKOUT
+      # ============================================================
+
+      # Create a checkout link for a subscription.
+      #
+      # @param subscription_id [String] Subscription ID
+      # @param expires_in_hours [Integer, nil] Hours until link expires
+      # @param expires_in_minutes [Integer, nil] Minutes until link expires
+      # @return [CheckoutLink] The checkout link with url and token
+      #
+      # @example
+      #   link = client.billing.create_checkout_link(
+      #     subscription_id: "sub_xxx",
+      #     expires_in_hours: 24
+      #   )
+      #   redirect_to link.checkout_url
+      #
+      def create_checkout_link(subscription_id:, expires_in_hours: nil, expires_in_minutes: nil)
+        body = {}
+        body[:expires_in_hours] = expires_in_hours if expires_in_hours
+        body[:expires_in_minutes] = expires_in_minutes if expires_in_minutes
+
+        data = @client.post("/billing/subscriptions/#{subscription_id}/checkout-link", body)
+        CheckoutLink.new(data, client: @client)
+      end
+
+      # ============================================================
+      # PAYMENTS
+      # ============================================================
+
+      # Check the status of a payment.
+      #
+      # @param payment_id [String] Payment ID
+      # @return [PaymentStatusResult] Payment status (actively polls provider if pending)
+      #
+      # @example
+      #   status = client.billing.get_payment_status("pay_xxx")
+      #   if status.paid?
+      #     puts "Payment confirmed"
+      #   end
+      #
+      def get_payment_status(payment_id)
+        data = @client.get("/billing/payments/#{payment_id}/status")
+        PaymentStatusResult.new(data, client: @client)
+      end
+
+      # ============================================================
       # PAYMENT CONFIGS
       # ============================================================
 
