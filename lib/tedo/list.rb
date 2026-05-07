@@ -35,6 +35,9 @@ module Tedo
     # @return [String, nil] Cursor for the next page
     attr_reader :next_cursor
 
+    # @return [Boolean, nil] Explicit server pagination flag when present
+    attr_reader :has_more
+
     # @return [Client] The client for fetching more pages
     attr_reader :client
 
@@ -43,10 +46,11 @@ module Tedo
     # @param next_cursor [String, nil] Cursor for next page
     # @param client [Client] Client for pagination
     # @param fetch_page [Proc] Proc to fetch the next page
-    def initialize(data:, total:, next_cursor:, client:, fetch_page:)
+    def initialize(data:, total: nil, next_cursor: nil, has_more: nil, client:, fetch_page:)
       @data = data
       @total = total
       @next_cursor = next_cursor
+      @has_more = has_more
       @client = client
       @fetch_page = fetch_page
     end
@@ -74,7 +78,16 @@ module Tedo
     #
     # @return [Boolean]
     def has_more?
+      return @has_more unless @has_more.nil?
+
       !@next_cursor.nil? && !@next_cursor.empty?
+    end
+
+    # Lazily iterate across every page.
+    #
+    # @return [Enumerator::Lazy]
+    def lazy
+      auto_paging_each.lazy
     end
 
     # Fetch the next page of results.

@@ -3,12 +3,15 @@
 module Tedo
   # Base error class for all Tedo errors
   class Error < StandardError
-    attr_reader :code, :http_status, :field
+    attr_reader :code, :http_status, :field, :details, :request_id, :retry_after
 
-    def initialize(message = nil, code: nil, http_status: nil, field: nil)
+    def initialize(message = nil, code: nil, http_status: nil, field: nil, details: nil, request_id: nil, retry_after: nil)
       @code = code
       @http_status = http_status
       @field = field
+      @details = details || {}
+      @request_id = request_id
+      @retry_after = retry_after
       super(message)
     end
   end
@@ -18,6 +21,7 @@ module Tedo
 
   # Raised when the API returns a 401 Unauthorized
   class AuthenticationError < Error; end
+  AuthError = AuthenticationError
 
   # Raised when the API returns a 403 Forbidden
   class PermissionError < Error; end
