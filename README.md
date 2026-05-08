@@ -39,6 +39,14 @@ won      = client.sales.create_stage(pipeline.id, name: "Won",   position: 2,
 
 lead = client.sales.create_lead(label: "Acme Inquiry", pipeline_id: pipeline.id, source: "website")
 lead.move_stage(stage_id: won.id)
+
+# Projects: create a project and work item
+project = client.projects.create_project(name: "Q2 Launch")
+work_item = client.projects.create_work_item(
+  project_id: project.id,
+  title: "Write launch checklist"
+)
+puts work_item.display_id
 ```
 
 ## Typed Resources
@@ -87,6 +95,7 @@ end
 # Then use the global client
 customer = Tedo.billing.create_customer(email: "user@example.com")
 pipeline = Tedo.sales.create_pipeline(name: "Enterprise", resource_type: "lead")
+project = Tedo.projects.create_project(name: "Launch")
 ```
 
 ### Per-Client Configuration
@@ -118,6 +127,9 @@ emails = client.billing.list_customers
               .auto_paging_each
               .map(&:email)
               .take(100)
+
+# Projects lists also expose a lazy enumerator across cursor pages
+first_twenty = client.projects.list_work_items.lazy.first(20)
 ```
 
 ### Manual Pagination
@@ -205,6 +217,31 @@ subscription.usage_summary
 ### Sales
 
 The Sales service covers the full CRM lifecycle: pipelines, stages, leads, deals, activities, notes, and contacts (persons and organizations).
+
+### Projects
+
+The Projects service covers projects, work items, workflow configuration, comments, activity, and file-reference attachments.
+
+```ruby
+project = client.projects.create_project(name: "Q2 Launch")
+
+todo = client.projects.create_work_item(
+  project_id: project.id,
+  title: "Draft announcement",
+  priority: Tedo::PROJECT_PRIORITY_MEDIUM,
+  idempotency_key: "launch-draft-announcement"
+)
+
+client.projects.list_work_items(project_id: project.id).lazy.first(20).each do |item|
+  puts "#{item.display_id}: #{item.title}"
+end
+
+client.projects.attach_file(
+  todo.id,
+  file_id: "file_xxx",
+  display_name: "Brief.pdf"
+)
+```
 
 #### Pipelines and Stages
 
