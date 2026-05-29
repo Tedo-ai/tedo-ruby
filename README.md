@@ -47,6 +47,16 @@ work_item = client.projects.create_work_item(
   title: "Write launch checklist"
 )
 puts work_item.display_id
+
+# Tables: create a table and query editorial rows
+table = client.tables.create_table(name: "Editorial Pipeline")
+client.tables.upsert_column(table.id, name: "Title", key: "title", type: "text")
+client.tables.bulk_upsert_rows(
+  table.id,
+  key_column: "title",
+  rows: [{ title: "Customer story" }]
+)
+rows = client.tables.query_rows(table.id, limit: 10)["rows"]
 ```
 
 ## Typed Resources

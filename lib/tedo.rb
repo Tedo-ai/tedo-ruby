@@ -30,6 +30,7 @@ require_relative "tedo/resources/contact_base"
 require_relative "tedo/resources/person"
 require_relative "tedo/resources/organization"
 require_relative "tedo/resources/projects"
+require_relative "tedo/resources/tables"
 
 # API resources
 require_relative "tedo/resources/billing"
@@ -58,6 +59,10 @@ module Tedo
 
     def projects
       client.projects
+    end
+
+    def tables
+      client.tables
     end
 
     # Reset the default client (useful for testing)
