@@ -57,7 +57,6 @@ module Tedo
       client.sales
     end
 
-<<<<<<< HEAD
     def projects
       client.projects
     end
