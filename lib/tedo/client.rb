@@ -26,6 +26,10 @@ module Tedo
       @projects ||= Resources::Projects.new(self)
     end
 
+    def tables
+      @tables ||= Resources::Tables.new(self)
+    end
+
     # HTTP methods
     def get(path, params = {}, headers: {})
       request(:get, path, params, headers: headers)
