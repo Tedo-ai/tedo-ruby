@@ -139,22 +139,24 @@ module Tedo
       end
 
       def create_table(name:, base_id: nil, slug: nil, description: nil, columns: nil)
-        @client.post("/tables/v1/tables", compact(
+        data = @client.post("/tables/v1/tables", compact(
           base_id: base_id,
           name: name,
           slug: slug,
           description: description,
           columns: columns
         ))
+        Table.new(data["table"] || data, client: @client)
       end
 
       def create_table_in_base(base_id, name:, slug: nil, description: nil, columns: nil)
-        @client.post("/tables/v1/bases/#{escape(base_id)}/tables", compact(
+        data = @client.post("/tables/v1/bases/#{escape(base_id)}/tables", compact(
           name: name,
           slug: slug,
           description: description,
           columns: columns
         ))
+        Table.new(data["table"] || data, client: @client)
       end
 
       def list_tables(base_id: nil, limit: nil)
@@ -163,7 +165,8 @@ module Tedo
       end
 
       def get_table(table_id)
-        @client.get("/tables/v1/tables/#{escape(table_id)}")
+        data = @client.get("/tables/v1/tables/#{escape(table_id)}")
+        Table.new(data["table"] || data, client: @client)
       end
 
       def update_table(table_id, name: nil, slug: nil, description: nil)
@@ -228,7 +231,7 @@ module Tedo
       end
 
       def query_rows(table_id, filter: nil, fields: nil, sort: nil, expand: nil, cursor: nil,
-                     limit: nil, group_by: nil, aggregate: nil, page: nil)
+                     limit: nil, group_by: nil, aggregate: nil, page: nil, v: nil)
         data = @client.get("/tables/v1/tables/#{escape(table_id)}/rows", compact(
           filter: filter,
           fields: fields,
@@ -238,7 +241,8 @@ module Tedo
           limit: limit,
           group_by: group_by,
           aggregate: aggregate,
-          page: page
+          page: page,
+          v: v
         ))
         data["rows"] = (data["rows"] || []).map { |item| Row.new(item, client: @client) } if data.key?("rows")
         data["schema"] = (data["schema"] || []).map { |item| Column.new(item, client: @client) } if data.key?("schema")
