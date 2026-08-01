@@ -53,7 +53,7 @@ module Tedo
         body = { key: key, name: name }
         body[:description] = description if description
 
-        data = @client.post("/billing/plans", body)
+        data = @client.post("/billing/v1/plans", body)
         Plan.new(data, client: @client)
       end
 
@@ -61,7 +61,7 @@ module Tedo
       #
       # @return [Array<Plan>] List of plans
       def list_plans
-        data = @client.get("/billing/plans")
+        data = @client.get("/billing/v1/plans")
         (data["plans"] || []).map { |p| Plan.new(p, client: @client) }
       end
 
@@ -70,7 +70,7 @@ module Tedo
       # @param id [String] Plan ID
       # @return [Plan] The plan with prices and entitlements
       def get_plan(id)
-        data = @client.get("/billing/plans/#{id}")
+        data = @client.get("/billing/v1/plans/#{id}")
         Plan.new(data, client: @client)
       end
 
@@ -89,7 +89,7 @@ module Tedo
         body[:description] = description if description
         body[:is_active] = is_active unless is_active.nil?
 
-        data = @client.patch("/billing/plans/#{id}", body)
+        data = @client.patch("/billing/v1/plans/#{id}", body)
         Plan.new(data, client: @client)
       end
 
@@ -98,7 +98,7 @@ module Tedo
       # @param id [String] Plan ID
       # @return [void]
       def delete_plan(id)
-        @client.delete("/billing/plans/#{id}")
+        @client.delete("/billing/v1/plans/#{id}")
         nil
       end
 
@@ -135,7 +135,7 @@ module Tedo
           trial_days: trial_days
         }
 
-        data = @client.post("/billing/plans/#{plan_id}/prices", body)
+        data = @client.post("/billing/v1/plans/#{plan_id}/prices", body)
         Price.new(data, client: @client)
       end
 
@@ -144,7 +144,7 @@ module Tedo
       # @param plan_id [String] Plan ID
       # @return [Array<Price>] List of prices
       def list_prices(plan_id)
-        data = @client.get("/billing/plans/#{plan_id}/prices")
+        data = @client.get("/billing/v1/plans/#{plan_id}/prices")
         (data["prices"] || []).map { |p| Price.new(p, client: @client) }
       end
 
@@ -154,7 +154,7 @@ module Tedo
       # @param price_id [String] Price ID
       # @return [void]
       def archive_price(plan_id, price_id)
-        @client.delete("/billing/plans/#{plan_id}/prices/#{price_id}")
+        @client.delete("/billing/v1/plans/#{plan_id}/prices/#{price_id}")
         nil
       end
 
@@ -185,7 +185,7 @@ module Tedo
         body[:overage_price] = overage_price if overage_price
         body[:overage_unit] = overage_unit if overage_unit
 
-        data = @client.post("/billing/plans/#{plan_id}/entitlements", body)
+        data = @client.post("/billing/v1/plans/#{plan_id}/entitlements", body)
         PlanEntitlement.new(data, client: @client)
       end
 
@@ -194,7 +194,7 @@ module Tedo
       # @param plan_id [String] Plan ID
       # @return [Array<PlanEntitlement>] List of entitlements
       def list_entitlements(plan_id)
-        data = @client.get("/billing/plans/#{plan_id}/entitlements")
+        data = @client.get("/billing/v1/plans/#{plan_id}/entitlements")
         (data["entitlements"] || []).map { |e| PlanEntitlement.new(e, client: @client) }
       end
 
@@ -204,7 +204,7 @@ module Tedo
       # @param entitlement_id [String] Entitlement ID
       # @return [void]
       def archive_entitlement(plan_id, entitlement_id)
-        @client.delete("/billing/plans/#{plan_id}/entitlements/#{entitlement_id}")
+        @client.delete("/billing/v1/plans/#{plan_id}/entitlements/#{entitlement_id}")
         nil
       end
 
@@ -234,7 +234,7 @@ module Tedo
         body[:external_id] = external_id if external_id
         body[:metadata] = metadata if metadata
 
-        data = @client.post("/billing/customers", body)
+        data = @client.post("/billing/v1/customers", body)
         Customer.new(data, client: @client)
       end
 
@@ -243,7 +243,7 @@ module Tedo
       # @param id [String] Customer ID
       # @return [Customer] The customer
       def get_customer(id)
-        data = @client.get("/billing/customers/#{id}")
+        data = @client.get("/billing/v1/customers/#{id}")
         Customer.new(data, client: @client)
       end
 
@@ -282,7 +282,7 @@ module Tedo
         body[:external_id] = external_id if external_id
         body[:metadata] = metadata if metadata
 
-        data = @client.patch("/billing/customers/#{id}", body)
+        data = @client.patch("/billing/v1/customers/#{id}", body)
         Customer.new(data, client: @client)
       end
 
@@ -292,7 +292,7 @@ module Tedo
       # @return [void]
       # @note Fails if the customer has active subscriptions
       def delete_customer(id)
-        @client.delete("/billing/customers/#{id}")
+        @client.delete("/billing/v1/customers/#{id}")
         nil
       end
 
@@ -321,7 +321,7 @@ module Tedo
         body[:quantity] = quantity if quantity
         body[:metadata] = metadata if metadata
 
-        data = @client.post("/billing/subscriptions", body)
+        data = @client.post("/billing/v1/subscriptions", body)
         Subscription.new(data, client: @client)
       end
 
@@ -330,7 +330,7 @@ module Tedo
       # @param id [String] Subscription ID
       # @return [Subscription] The subscription
       def get_subscription(id)
-        data = @client.get("/billing/subscriptions/#{id}")
+        data = @client.get("/billing/v1/subscriptions/#{id}")
         Subscription.new(data, client: @client)
       end
 
@@ -340,7 +340,7 @@ module Tedo
       # @return [Subscription] The canceled subscription
       # @note Subscription remains active until end of current period
       def cancel_subscription(id)
-        data = @client.delete("/billing/subscriptions/#{id}")
+        data = @client.delete("/billing/v1/subscriptions/#{id}")
         Subscription.new(data, client: @client)
       end
 
@@ -364,7 +364,7 @@ module Tedo
       #   end
       #
       def check_entitlement(customer_id:, entitlement_key:)
-        data = @client.post("/billing/entitlements/check", {
+        data = @client.post("/billing/v1/entitlements/check", {
           customer_id: customer_id,
           entitlement_key: entitlement_key
         })
@@ -395,7 +395,7 @@ module Tedo
         body[:timestamp] = timestamp.iso8601 if timestamp
         body[:idempotency_key] = idempotency_key if idempotency_key
 
-        data = @client.post("/billing/usage", body)
+        data = @client.post("/billing/v1/usage", body)
         UsageRecord.new(data, client: @client)
       end
 
@@ -404,7 +404,7 @@ module Tedo
       # @param subscription_id [String] Subscription ID
       # @return [UsageSummary] Usage summary with total_usage, period_start, period_end
       def get_usage_summary(subscription_id:)
-        data = @client.get("/billing/usage", { subscription_id: subscription_id })
+        data = @client.get("/billing/v1/usage", { subscription_id: subscription_id })
         UsageSummary.new(data, client: @client)
       end
 
@@ -423,7 +423,7 @@ module Tedo
       #   redirect_to link.url
       #
       def create_portal_link(customer_id:, expires_in_hours: 24)
-        data = @client.post("/billing/customers/#{customer_id}/portal-link", {
+        data = @client.post("/billing/v1/customers/#{customer_id}/portal-link", {
           expires_in_hours: expires_in_hours
         })
         PortalLink.new(data, client: @client)
@@ -444,7 +444,7 @@ module Tedo
         params[:limit] = limit if limit
         params[:offset] = offset if offset
 
-        data = @client.get("/billing/invoices", params)
+        data = @client.get("/billing/v1/invoices", params)
         (data["invoices"] || []).map { |i| Invoice.new(i, client: @client) }
       end
 
@@ -468,7 +468,7 @@ module Tedo
         body[:notes] = notes if notes
         body[:metadata] = metadata if metadata
 
-        data = @client.post("/billing/invoices", body)
+        data = @client.post("/billing/v1/invoices", body)
         Invoice.new(data, client: @client)
       end
 
@@ -477,7 +477,7 @@ module Tedo
       # @param id [String] Invoice ID
       # @return [Invoice] The invoice
       def get_invoice(id)
-        data = @client.get("/billing/invoices/#{id}")
+        data = @client.get("/billing/v1/invoices/#{id}")
         Invoice.new(data, client: @client)
       end
 
@@ -490,7 +490,7 @@ module Tedo
         body = {}
         body[:redirect_url] = redirect_url if redirect_url
 
-        data = @client.post("/billing/invoices/#{invoice_id}/checkout", body)
+        data = @client.post("/billing/v1/invoices/#{invoice_id}/checkout", body)
         InvoiceCheckoutResult.new(data, client: @client)
       end
 
@@ -517,7 +517,7 @@ module Tedo
         body[:expires_in_hours] = expires_in_hours if expires_in_hours
         body[:expires_in_minutes] = expires_in_minutes if expires_in_minutes
 
-        data = @client.post("/billing/subscriptions/#{subscription_id}/checkout-link", body)
+        data = @client.post("/billing/v1/subscriptions/#{subscription_id}/checkout-link", body)
         CheckoutLink.new(data, client: @client)
       end
 
@@ -537,7 +537,7 @@ module Tedo
       #   end
       #
       def get_payment_status(payment_id)
-        data = @client.get("/billing/payments/#{payment_id}/status")
+        data = @client.get("/billing/v1/payments/#{payment_id}/status")
         PaymentStatusResult.new(data, client: @client)
       end
 
@@ -564,7 +564,7 @@ module Tedo
         body = { provider: provider, connection_id: connection_id, is_default: is_default }
         body[:settings] = settings if settings
 
-        data = @client.post("/billing/payment-configs", body)
+        data = @client.post("/billing/v1/payment-configs", body)
         PaymentConfig.new(data, client: @client)
       end
 
@@ -572,7 +572,7 @@ module Tedo
       #
       # @return [Array<PaymentConfig>] List of payment configs
       def list_payment_configs
-        data = @client.get("/billing/payment-configs")
+        data = @client.get("/billing/v1/payment-configs")
         (data["payment_configs"] || []).map { |c| PaymentConfig.new(c, client: @client) }
       end
 
@@ -581,7 +581,7 @@ module Tedo
       # @param id [String] Payment config ID
       # @return [PaymentConfig] The payment config
       def get_payment_config(id)
-        data = @client.get("/billing/payment-configs/#{id}")
+        data = @client.get("/billing/v1/payment-configs/#{id}")
         PaymentConfig.new(data, client: @client)
       end
 
@@ -600,7 +600,7 @@ module Tedo
         body[:is_default] = is_default unless is_default.nil?
         body[:settings] = settings if settings
 
-        data = @client.patch("/billing/payment-configs/#{id}", body)
+        data = @client.patch("/billing/v1/payment-configs/#{id}", body)
         PaymentConfig.new(data, client: @client)
       end
 
@@ -609,18 +609,136 @@ module Tedo
       # @param id [String] Payment config ID
       # @return [void]
       def delete_payment_config(id)
-        @client.delete("/billing/payment-configs/#{id}")
+        @client.delete("/billing/v1/payment-configs/#{id}")
         nil
       end
 
+      # ============================================================
+      # BILLABLE USAGE LEDGER AND CUSTOMER-PERIOD COMPOSITION
+      # ============================================================
+
+      # Record one immutable amount-excluding-tax usage fact.
+      # The caller owns the idempotency key. Reuse it unchanged for retries;
+      # never generate a new key for the same source-system revision.
+      def record_billable_usage(subscription_id:, product_key:, amount_excluding_tax_cents:, currency:, occurred_at:,
+                                idempotency_key:, metadata: nil)
+        body = {
+          subscription_id: subscription_id,
+          product_key: product_key,
+          amount_excluding_tax_cents: amount_excluding_tax_cents,
+          currency: currency,
+          occurred_at: iso8601_value(occurred_at)
+        }
+        body[:metadata] = metadata unless metadata.nil?
+
+        data = @client.post(
+          "/billing/v1/usage-records",
+          body,
+          headers: idempotency_headers(idempotency_key)
+        )
+        BillableUsageRecord.new(data, client: @client)
+      end
+
+      # Read one resumable page of immutable usage facts for a half-open period.
+      def list_billable_usage(customer_id:, occurred_at_gte:, occurred_at_lt:, limit: nil, cursor: nil)
+        fetch_billable_usage_page(
+          customer_id: customer_id,
+          occurred_at_gte: iso8601_value(occurred_at_gte),
+          occurred_at_lt: iso8601_value(occurred_at_lt),
+          limit: limit,
+          cursor: cursor
+        )
+      end
+
+      # Atomically create or replay the fixed-plus-usage charge for one local
+      # customer month.
+      def compose_customer_period_charge(customer_id:, subscription_id:, period_start:, period_end:, timezone:,
+                                         external_period_key:, idempotency_key:)
+        data = @client.post(
+          "/billing/v1/customers/#{escape(customer_id)}/period-charges",
+          {
+            subscription_id: subscription_id,
+            period_start: iso8601_value(period_start),
+            period_end: iso8601_value(period_end),
+            timezone: timezone,
+            external_period_key: external_period_key
+          },
+          headers: idempotency_headers(idempotency_key)
+        )
+        PeriodCompositionResult.new(data, client: @client)
+      end
+
+      # Seal a manually billed period so later automation cannot duplicate it.
+      def close_customer_period_manually(customer_id:, period_start:, period_end:, timezone:, external_period_key:,
+                                         reason:, idempotency_key:, charge_id: nil)
+        body = {
+          period_start: iso8601_value(period_start),
+          period_end: iso8601_value(period_end),
+          timezone: timezone,
+          external_period_key: external_period_key,
+          reason: reason
+        }
+        body[:charge_id] = charge_id unless charge_id.nil?
+
+        data = @client.post(
+          "/billing/v1/customers/#{escape(customer_id)}/period-closures",
+          body,
+          headers: idempotency_headers(idempotency_key)
+        )
+        PeriodCompositionResult.new(data, client: @client)
+      end
+
       private
+
+      def fetch_billable_usage_page(customer_id:, occurred_at_gte:, occurred_at_lt:, limit:, cursor:)
+        params = {
+          occurred_at_gte: occurred_at_gte,
+          occurred_at_lt: occurred_at_lt
+        }
+        params[:limit] = limit unless limit.nil?
+        params[:cursor] = cursor unless cursor.nil?
+        data = @client.get("/billing/v1/customers/#{escape(customer_id)}/usage-records", params)
+        records = (data["records"] || []).map { |record| BillableUsageRecord.new(record, client: @client) }
+
+        List.new(
+          data: records,
+          next_cursor: data["next_cursor"],
+          has_more: data["has_more"],
+          client: @client,
+          fetch_page: lambda do |next_cursor|
+            fetch_billable_usage_page(
+              customer_id: customer_id,
+              occurred_at_gte: occurred_at_gte,
+              occurred_at_lt: occurred_at_lt,
+              limit: limit,
+              cursor: next_cursor
+            )
+          end
+        )
+      end
+
+      def idempotency_headers(key)
+        raise ArgumentError, "idempotency_key is required" if key.nil? || key.to_s.empty?
+
+        { "Idempotency-Key" => key.to_s }
+      end
+
+      def iso8601_value(value)
+        raise ArgumentError, "timestamp is required" if value.nil?
+
+        value.respond_to?(:iso8601) ? value.iso8601 : value.to_s
+      end
+
+      def escape(value)
+        URI.encode_www_form_component(value.to_s)
+      end
 
       def fetch_customers_page(limit:, cursor:)
         params = {}
         params[:limit] = limit if limit
         params[:cursor] = cursor if cursor
 
-        data = @client.get("/billing/customers", params)
+        data = @client.get("/billing/v1/customers", params)
 
         customers = (data["customers"] || []).map do |c|
           Customer.new(c, client: @client)

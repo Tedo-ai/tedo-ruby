@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
+require_relative "lib/tedo/version"
+
 Gem::Specification.new do |spec|
   spec.name          = "tedo"
-  spec.version       = "0.1.1"
+  spec.version       = Tedo::VERSION
   spec.authors       = ["Tedo"]
   spec.email         = ["support@tedo.ai"]
 
@@ -16,5 +18,4 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "faraday", ">= 1.0", "< 3.0"
-  spec.add_dependency "faraday-retry", "~> 2.0"
 end

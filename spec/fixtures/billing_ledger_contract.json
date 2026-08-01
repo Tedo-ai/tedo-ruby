@@ -1,0 +1,48 @@
+{
+  "endpoints": [
+    {
+      "ruby_method": "record_billable_usage",
+      "operation_id": "recordBillableUsage",
+      "method": "POST",
+      "path": "/billing/v1/usage-records",
+      "required_headers": ["Idempotency-Key"],
+      "required_query": [],
+      "required_request": ["amount_excluding_tax_cents", "currency", "occurred_at", "product_key", "subscription_id"],
+      "success_status": "201",
+      "required_response": ["amount_excluding_tax_cents", "applied_period_end", "applied_period_start", "charge_id", "currency", "customer_id", "id", "idempotency_key", "invoice_id", "metadata", "occurred_at", "product_key", "recorded_at", "reversal_of", "state", "subscription_id"]
+    },
+    {
+      "ruby_method": "list_billable_usage",
+      "operation_id": "listBillableUsage",
+      "method": "GET",
+      "path": "/billing/v1/customers/{customer_id}/usage-records",
+      "required_headers": [],
+      "required_query": ["occurred_at_gte", "occurred_at_lt"],
+      "required_request": [],
+      "success_status": "200",
+      "required_response": ["has_more", "next_cursor", "occurred_at_gte", "occurred_at_lt", "records"]
+    },
+    {
+      "ruby_method": "compose_customer_period_charge",
+      "operation_id": "composeCustomerPeriodCharge",
+      "method": "POST",
+      "path": "/billing/v1/customers/{customer_id}/period-charges",
+      "required_headers": ["Idempotency-Key"],
+      "required_query": [],
+      "required_request": ["external_period_key", "period_end", "period_start", "subscription_id", "timezone"],
+      "success_status": "200",
+      "required_response": ["already_existed", "charge", "composition", "usage_record_ids"]
+    },
+    {
+      "ruby_method": "close_customer_period_manually",
+      "operation_id": "closeCustomerPeriodManually",
+      "method": "POST",
+      "path": "/billing/v1/customers/{customer_id}/period-closures",
+      "required_headers": ["Idempotency-Key"],
+      "required_query": [],
+      "required_request": ["external_period_key", "period_end", "period_start", "reason", "timezone"],
+      "success_status": "200",
+      "required_response": ["already_existed", "charge", "composition", "usage_record_ids"]
+    }
+  ]
+}
