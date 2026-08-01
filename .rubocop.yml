@@ -36,6 +36,11 @@ Layout/EmptyLineAfterGuardClause:
 Layout/FirstHashElementIndentation:
   Enabled: false
 
+# The SDK consistently indents keyword hashes passed through helper calls by
+# one logical level rather than aligning them under the opening parenthesis.
+Layout/FirstArgumentIndentation:
+  Enabled: false
+
 Layout/LineLength:
   Enabled: false
 
@@ -56,6 +61,11 @@ Style/SymbolArray:
 
 Naming/PredicatePrefix:
   Enabled: false
+
+Naming/MethodParameterName:
+  AllowedNames:
+    - id
+    - v
 
 Lint/ConstantDefinitionInBlock:
   Enabled: false

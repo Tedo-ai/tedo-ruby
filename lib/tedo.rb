@@ -3,6 +3,7 @@
 require "faraday"
 require "json"
 require "time"
+require "uri"
 
 require_relative "tedo/version"
 require_relative "tedo/errors"
@@ -17,6 +18,7 @@ require_relative "tedo/resources/customer"
 require_relative "tedo/resources/subscription"
 require_relative "tedo/resources/entitlement_check"
 require_relative "tedo/resources/usage"
+require_relative "tedo/resources/billing_ledger"
 require_relative "tedo/resources/portal_link"
 require_relative "tedo/resources/payment_config"
 require_relative "tedo/resources/invoice"
@@ -71,5 +73,7 @@ module Tedo
     end
   end
 
-  self.base_url = "https://api.tedo.ai/v1"
+  # Resource paths carry their own app/version prefix (for example,
+  # /billing/v1 and /projects/v1), so the shared base URL is the API origin.
+  self.base_url = "https://api.tedo.ai"
 end

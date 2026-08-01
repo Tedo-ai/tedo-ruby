@@ -113,9 +113,68 @@ project = Tedo.projects.create_project(name: "Launch")
 ```ruby
 client = Tedo::Client.new(
   "tedo_live_xxx",
-  base_url: "https://api.staging.tedo.ai/v1"
+  base_url: "https://api.staging.tedo.ai"
 )
 ```
+
+Resource methods include their app and API version in the path. Configure the
+API origin only; do not append `/v1` to `base_url`.
+
+## Billing ledger and period composition
+
+Version 0.2 adds the server-contract-tested financial slice used by the
+Bidvise integration. These methods use integer cents excluding tax and require
+the caller to provide the durable idempotency key.
+
+```ruby
+record = client.billing.record_billable_usage(
+  subscription_id: "sub_xxx",
+  product_key: "auction_commission",
+  amount_excluding_tax_cents: 4_250,
+  currency: "EUR",
+  occurred_at: "2026-09-18T14:30:00+02:00",
+  metadata: { lot_id: "123" },
+  idempotency_key: "bidvise:lot:123:commission:v1"
+)
+
+client.billing.list_billable_usage(
+  customer_id: "cus_xxx",
+  occurred_at_gte: "2026-09-01T00:00:00+02:00",
+  occurred_at_lt: "2026-10-01T00:00:00+02:00",
+  limit: 100
+).auto_paging_each do |usage|
+  puts "#{usage.idempotency_key}: #{usage.state} #{usage.charge_id}"
+end
+
+result = client.billing.compose_customer_period_charge(
+  customer_id: "cus_xxx",
+  subscription_id: "sub_xxx",
+  period_start: "2026-09-01T00:00:00+02:00",
+  period_end: "2026-10-01T00:00:00+02:00",
+  timezone: "Europe/Amsterdam",
+  external_period_key: "bidvise:customer:42:2026-09",
+  idempotency_key: "bidvise:customer:42:2026-09:compose:v1"
+)
+puts result.charge.id
+```
+
+The cursor is opaque. `auto_paging_each` passes it back unchanged together with
+the original customer and half-open period.
+
+### Safe retries
+
+Retries are opt-in and bounded:
+
+```ruby
+client = Tedo::Client.new(
+  ENV.fetch("TEDO_API_KEY"),
+  max_retries: 2
+)
+```
+
+GET requests may be retried. A POST/PATCH/PUT is retried only when it carries
+an `Idempotency-Key`; every attempt reuses the identical key and JSON body.
+Unsafe legacy writes without a key are never retried automatically.
 
 ## Pagination
 
@@ -179,6 +238,10 @@ rescue Tedo::AuthenticationError => e
   puts "Invalid API key"
 rescue Tedo::RateLimitError => e
   puts "Rate limited, slow down!"
+rescue Tedo::ConflictError => e
+  puts "Idempotency or domain conflict: #{e.code}"
+rescue Tedo::TransientError => e
+  puts "Safe to retry unchanged: #{e.code}"
 rescue Tedo::PermissionError => e
   puts "Not authorized for this action"
 rescue Tedo::APIError => e
