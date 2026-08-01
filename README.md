@@ -99,7 +99,7 @@ puts link.expired?      # => false
 ```ruby
 Tedo.configure do |config|
   config.api_key = "tedo_live_xxx"
-  config.base_url = "https://api.tedo.ai/v1"  # optional
+  config.base_url = "https://api.tedo.ai"  # optional
 end
 
 # Then use the global client
