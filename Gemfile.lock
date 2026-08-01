@@ -21,7 +21,7 @@ GEM
     logger (1.7.0)
     net-http (0.8.0)
       uri (>= 0.11.1)
-    parallel (2.0.1)
+    parallel (1.28.0)
     parser (3.3.11.1)
       ast (~> 2.4.1)
       racc
@@ -67,6 +67,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  parallel (< 2.0)
   rspec (~> 3.13)
   rubocop (~> 1.75)
   tedo!
